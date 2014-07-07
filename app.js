@@ -11,9 +11,9 @@ var fb = require('fbgraph');
 
 var routes = require('./routes');
 var users = require('./routes/user');
-var conf = require('file');
+var conf = require('./file.js');
 var AlchemyAPI = require('alchemy-api');
-var alchemy = new AlchemyAPI(ALCH);
+var alchemy = new AlchemyAPI(conf.ALCH1);
 
 
 
@@ -49,19 +49,12 @@ res.redirect('./bin/index');
 
 });
 
-
-
-
-
 //fb code:
 
 app.get('/friends', function(req, res) {
 
-    fb.setAccessToken(FB);
+    fb.setAccessToken(conf.FB1);
     
-    
-    
-
     fbGetAsync('2503283').then(function(data){
         console.log('in then ', data['first_name']);
         res.send('then');
@@ -77,7 +70,7 @@ app.get('/posts', function(req, res) {
     var recentContacts = {};
     var promiseArray = [];
 
-    fb.setAccessToken();
+    fb.setAccessToken(conf.FB1);
     
     var Promise = require("node-promise").Promise;
 
@@ -89,75 +82,113 @@ app.get('/posts', function(req, res) {
     // };
 
     var recentContacts = {};
+    var statusesArray = [];
+    var alchemyArray =[];
 
 
 
     var getContacts = function(){
         var p = new Promise;
 
-       // var recentContacts = {};
-
         fb.get("me/posts", function(err, results) {
             //get my recent contacts
             var data = results.data;
-            for(var i = 0; i < data.length; i++){
+            //console.log('data length is ', data.length);
+            for(var i = 0; i < 10; i++){
                 var obj = data[i]['story_tags'];
                 for (var key in obj){
                     for (var j = 0; j<obj[key].length; j++){
                         //console.log('hey ' + obj[key][j]['id'] + ' ' + obj[key][j]['name']);
-                        recentContacts[obj[key][j]['id']] = true;
+                        recentContacts[obj[key][j]['id']] = '';
                     }
                 }  
             }
-            p.resolve(recentContacts);         
+            p.resolve();         
         });
 
         return p;
     };
 
-    getStatuses = function (userId){
+    getStatuses = function (){
         var p = new Promise;
-        console.log('in getStatuses');
+        var allFunc = require("node-promise").all;
 
-        fb.get(userId + "/statuses", function(err, results) {
-            console.log('iterating statuses');
-            console.log('do we have userId in here? -> ', userId);
+
+        for (var contact in recentContacts){
+
+            //throttle
+            promiseArray.push(getStatus(contact));
+
+        }
+
+        //console.log('bad loop');
+        return allFunc(promiseArray);
+    };
+
+    var getStatus = function(contact){
+
+        var p = new Promise;
+
+        fb.get(contact + "/statuses", function(err, results) { 
             var data = results.data;
             for(var i = 0; i < data.length; i++){
-                recentContacts[userId] = recentContacts[userId] + ' ' + data[i]['message'];
-            }    
-            p.resolve(recentContacts[userId]);
+                recentContacts[contact] = recentContacts[contact] + ' ' + data[i]['message'];
+            } 
+            if (recentContacts[contact].length === 0){
+                delete recentContacts[contact];
+            }
+            p.resolve(); 
+
         });
 
         return p;
+
     };
 
-    getAlchemyScore = function(text){
-        var p = new Promise;
-        console.log('in getAlchemyScore');
 
-        alchemy.sentiment('there are flowers on the grass', {}, function(err, response) {
+    getAllScores = function(){
+        var p = new Promise;
+        var allFunc = require("node-promise").all;
+
+        for (var contact in recentContacts){
+
+
+            promiseArray.push(getAlchemyScore(contact, recentContacts[contact]));
+
+        }
+
+        //console.log('bad loop');
+        return allFunc(promiseArray);
+    };
+
+
+    getAlchemyScore = function(contact, text){
+        var p = new Promise;
+        //console.log('in getAlchemyScore');
+        //console.log('this is passed in -->', text);
+
+        //console.log('text is ', text);
+
+        alchemy.sentiment(text, {}, function(err, response) {
             if (err) throw err;
             // See http://www.alchemyapi.com/api/ for format of returned object
             var sentiment = response.docSentiment;
-            console.log('sentiment analysis for user 147911588 is ', sentiment);
+            //console.log('sentiment analysis for user 147911588 is ', sentiment);
+            recentContacts[contact] = sentiment;
             p.resolve();
         });
 
         return p;
-    };
+    };   
+    
+    // getStatuses(1339502399).then(getAlchemyScore).then(function(result){
+    //     console.log('result from stats/alchemy is: --> ', result);
+    // });
 
-    getContacts().then(function (obj){
-        console.log('getContacts resolved');
-       // console.log('passed from getContacts fullfillment : ', obj);
+    getContacts().then(getStatuses).then(getAllScores).then(function(){
+        console.log('all scores ?', recentContacts);
 
     });
-
-    getStatuses(1339502399).then(function(obj){
-        console.log('passed from getStatuses fullfillment : ', obj);
-
-    })
-   
 
 
 
@@ -169,8 +200,6 @@ app.get('/posts', function(req, res) {
     res.send('hey');
 
 });
-
-
 
 
 // development error handler
