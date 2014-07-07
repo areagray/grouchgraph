@@ -72,27 +72,72 @@ app.get('/posts', function(req, res) {
 
     fb.setAccessToken('CAAKMrAl97iIBAIaPZB9KyWQFjp8GMpZAw87LZBDc7EflL3jeJUE3dbC6yowirFO3fjSgqOOwasbR7neClIEiZCXlGUMmRoAvz7UM5uSbiJRR73CbYDQMo4AGWV9S4gbWvSIr9IBKVXUgqYgEYuIACyEbHS5MpIFMVfA1ZC2jxI8OPOC4F2O3tQ4ZCue3I2wsrmcImibmgl2DmTa9K2C5f5');
     
-    // var Promise = require("node-promise").Promise;
-    // var getRecents = new Promise();
+    var Promise = require("node-promise").Promise;
 
-    var testFunc = function(message){
-        console.log('message is ', message);
-        return message;
+    // var testP = function (){
+    //     var p = new Promise;
+    //     console.log('in test P');
+    //     p.resolve('hey');
+    //     return p;
+    // };
 
+    var recentContacts = {};
+
+
+
+    var getContacts = function(){
+        var p = new Promise;
+
+       // var recentContacts = {};
+
+        fb.get("me/posts", function(err, results) {
+            //get my recent contacts
+            var data = results.data;
+            for(var i = 0; i < data.length; i++){
+                var obj = data[i]['story_tags'];
+                for (var key in obj){
+                    for (var j = 0; j<obj[key].length; j++){
+                        //console.log('hey ' + obj[key][j]['id'] + ' ' + obj[key][j]['name']);
+                        recentContacts[obj[key][j]['id']] = true;
+                    }
+                }  
+            }
+            p.resolve(recentContacts);         
+        });
+
+        return p;
     };
 
-    var testFuncAsync = function(opts){
-        var defer = require("node-promise").defer;
-        var deferred = defer();
-        testFunc(opts, deferred.resolve);
-        return deferred.promise;
+    getStatuses = function (userId){
+        var p = new Promise;
+        console.log('in getStatuses');
+
+        fb.get(userId + "/statuses", function(err, results) {
+            console.log('iterating statuses');
+            console.log('do we have userId in here? -> ', userId);
+            var data = results.data;
+            for(var i = 0; i < data.length; i++){
+                recentContacts[userId] = recentContacts[userId] + ' ' + data[i]['message'];
+            }    
+            p.resolve(recentContacts[userId]);
+        });
+
+        return p;
     };
 
+    getAlchemyScore = function(text)
 
-    testFuncAsync('hello').then(function(res){
+    getContacts().then(function (obj){
+        console.log('getContacts resolved');
+       // console.log('passed from getContacts fullfillment : ', obj);
 
-        console.log('made it through');
     });
+
+    getStatuses(1339502399).then(function(obj){
+        console.log('passed from getStatuses fullfillment : ', obj);
+
+    })
+   
 
 
 
@@ -170,9 +215,10 @@ fbGetAsync("me/friends").then(function(data){
     });
 
     var getStatuses = function(id){
-        fb.get(id + "/statuses", function(err, results) {
-            return results;
-        });
+        
+
+
+
     };
 
     p().then(function(){
