@@ -1,0 +1,42 @@
+//grab recent contacts from a user
+
+var processPosts = function(results) {
+
+        console.log('in results');
+                //get my recent contacts
+                var data = results.data;
+                for(var i = 0; i < data.length; i++){
+                    var obj = data[i]['story_tags'];
+                    for (var key in obj){
+                        for (var j = 0; j<obj[key].length; j++){
+                            //console.log('hey ' + obj[key][j]['id'] + ' ' + obj[key][j]['name']);
+                            recentContacts[obj[key][j]['id']] = true;
+                        }
+                    }  
+                }      
+            };
+
+//grab recent statuses of each user
+
+fb.get("1147911588/statuses", function(err, results) {
+             //concat and add
+        var data = results.data;
+
+        for(var i = 0; i < data.length; i++){
+            recentContacts['1147911588'] = recentContacts['1147911588'] + ' ' + data[i]['message'];
+        }  
+        //console.log(recentContacts['1147911588']);
+
+        alchemy.sentiment('i hate all people.  they suck', {}, function(err, response) {
+            if (err) throw err;
+
+            // See http://www.alchemyapi.com/api/ for format of returned object
+            var sentiment = response.docSentiment;
+            console.log('sentiment analysis for user 147911588 is ', sentiment);
+
+            // Do something with data
+        });
+
+
+     });
+
