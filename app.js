@@ -54,7 +54,7 @@ app.get('/friends', function(req, res) {
 
     fb.setAccessToken(process.env.FB);
     
-    fb.setAccessToken('CAAKMrAl97iIBAIaPZB9KyWQFjp8GMpZAw87LZBDc7EflL3jeJUE3dbC6yowirFO3fjSgqOOwasbR7neClIEiZCXlGUMmRoAvz7UM5uSbiJRR73CbYDQMo4AGWV9S4gbWvSIr9IBKVXUgqYgEYuIACyEbHS5MpIFMVfA1ZC2jxI8OPOC4F2O3tQ4ZCue3I2wsrmcImibmgl2DmTa9K2C5f5');
+    
     
 
     fbGetAsync('2503283').then(function(data){
