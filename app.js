@@ -52,6 +52,8 @@ res.redirect('./bin/index');
 
 app.get('/friends', function(req, res) {
 
+    fb.setAccessToken(process.env.FB);
+    
     fb.setAccessToken('CAAKMrAl97iIBAIaPZB9KyWQFjp8GMpZAw87LZBDc7EflL3jeJUE3dbC6yowirFO3fjSgqOOwasbR7neClIEiZCXlGUMmRoAvz7UM5uSbiJRR73CbYDQMo4AGWV9S4gbWvSIr9IBKVXUgqYgEYuIACyEbHS5MpIFMVfA1ZC2jxI8OPOC4F2O3tQ4ZCue3I2wsrmcImibmgl2DmTa9K2C5f5');
     
 
@@ -125,7 +127,21 @@ app.get('/posts', function(req, res) {
         return p;
     };
 
-    getAlchemyScore = function(text)
+    getAlchemyScore = function(text){
+        var p = new Promise;
+        console.log('in getAlchemyScore');
+
+        var alchemy = new AlchemyAPI(process.env.ALCH);
+        alchemy.sentiment('there are flowers on the grass', {}, function(err, response) {
+            if (err) throw err;
+            // See http://www.alchemyapi.com/api/ for format of returned object
+            var sentiment = response.docSentiment;
+            console.log('sentiment analysis for user 147911588 is ', sentiment);
+            p.resolve();
+        });
+
+        return p;
+    };
 
     getContacts().then(function (obj){
         console.log('getContacts resolved');
