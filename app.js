@@ -99,7 +99,7 @@ app.get('/posts', function(req, res) {
             //get my recent contacts
             var data = results.data;
             //console.log('data length is ', data.length);
-            for(var i = 0; i < 10; i++){
+            for(var i = 0; i < data.length; i++){
                 var obj = data[i]['story_tags'];
                 for (var key in obj){
                     for (var j = 0; j<obj[key].length; j++){
@@ -152,7 +152,7 @@ app.get('/posts', function(req, res) {
                 delete person;
             }
 
-            fb.get(contact + "/picture?redirect=0&type=small", function(err, results) { 
+            fb.get(contact + "/picture?redirect=0&type=normal", function(err, results) { 
                 var data = results.data;  
                 recentContacts[contact]['photoUrl'] = data.url;   
                 console.log('resolving getInfo promise for '+contact);
@@ -190,6 +190,8 @@ app.get('/posts', function(req, res) {
 
         //console.log('text is ', text);
 
+        console.log('Getting score for user '+contact + ' with text length of '+ text.length);
+
         alchemy.sentiment(text, {}, function(err, response) {
             if (err) throw err;
             // See http://www.alchemyapi.com/api/ for format of returned object
@@ -203,6 +205,7 @@ app.get('/posts', function(req, res) {
                 delete recentContacts[contact];
             } else {
                 recentContacts[contact]['alchemyRating'] = sentiment;
+                recentContacts[contact]['alchemyRating']['rank'] = Number(sentiment.score) +1;
                 delete recentContacts[contact]['text'];
             }
              console.log('resolving getScore promise for '+contact);
