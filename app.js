@@ -49,7 +49,10 @@ res.redirect('./bin/index');
 
 });
 
-//fb code:
+app.get('/grouchgraph', function (req,res){
+    //console.log('trying to redirect');
+    res.redirect('grouchgraph.html');
+});
 
 app.get('/friends', function(req, res) {
 
@@ -76,13 +79,6 @@ app.get('/posts', function(req, res) {
     
     var Promise = require("node-promise").Promise;
 
-    // var testP = function (){
-    //     var p = new Promise;
-    //     console.log('in test P');
-    //     p.resolve('hey');
-    //     return p;
-    // };
-
     var recentContacts = {};
     var statusesArray = [];
     var alchemyArray =[];
@@ -91,31 +87,27 @@ app.get('/posts', function(req, res) {
 
     var getContacts = function(){
         var p = new Promise;
-        var userObj = {
-            fbId: '',
-            name: '',
-            text:'',
-            photoUrl:'',
-            alchemyRating:''
-        }
+
 
         fb.get("me/posts", function(err, results) {
             //get my recent contacts
             var data = results.data;
             //console.log('data length is ', data.length);
-            for(var i = 0; i < 5; i++){
+            for(var i = 0; i < 10; i++){
                 var obj = data[i]['story_tags'];
                 for (var key in obj){
                     for (var j = 0; j<obj[key].length; j++){
+
                         var userId = obj[key][j]['id'];
-                        recentContacts[userId] = userObj;
+                        console.log('user id', userId);
+                        recentContacts[userId] = {};
                         recentContacts[userId]['name']=obj[key][j]['name'];
                         recentContacts[userId]['fbId']=userId;
+                        recentContacts[userId]['text']='';
 
                     }
                 }  
             }
-            console.log('expanded info ', recentContacts);
             p.resolve();         
         });
 
@@ -139,7 +131,6 @@ app.get('/posts', function(req, res) {
     };
 
     var getInfo = function(contact){
-        console.log('what is the contact coming into get info ', contact);
 
         var p = new Promise;
 
@@ -149,7 +140,9 @@ app.get('/posts', function(req, res) {
             for(var i = 0; i < data.length; i++){
                 person['text'] = person['text'] + ' ' + data[i]['message'];
             } 
+            person['text'].length
             if (person['text'].length === 0){
+                console.log('DELETING USER');
                 delete person;
             }
 
@@ -195,31 +188,34 @@ app.get('/posts', function(req, res) {
             // See http://www.alchemyapi.com/api/ for format of returned object
             var sentiment = response.docSentiment;
             //console.log('sentiment analysis for user 147911588 is ', sentiment);
-            recentContacts[contact]['alchemyRating'] = sentiment;
-            delete recentContacts[contact]['text'];
+
+            if (sentiment === undefined){
+                //handle case when sentiment comes back empty
+                //this is caused by no statuses coming back above and shoule be fixed there
+                //aJay is example
+                delete recentContacts[contact];
+            } else {
+                recentContacts[contact]['alchemyRating'] = sentiment;
+                delete recentContacts[contact]['text'];
+            }
             p.resolve();
         });
 
         return p;
     };   
-    
-    // getStatuses(1339502399).then(getAlchemyScore).then(function(result){
-    //     console.log('result from stats/alchemy is: --> ', result);
-    // });
 
     getContacts().then(getInfos).then(getAllScores).then(function(){
         console.log('all scores ?', recentContacts);
+        var responseArray = [];
+
+        for (var key in recentContacts){
+            responseArray.push(recentContacts[key]);
+        }
+
+     res.send(responseArray);
 
     });
 
-
-
-    // asyncOperation(function(){
-    // Promise.resolve("succesful result");
-    // });
-    // promise -> given to the consumer
-
-    res.send('hey');
 
 });
 
@@ -247,68 +243,3 @@ app.use(function(err, req, res, next) {
 
 module.exports = app;
 
-/*ASYNC CODE
-fbGetAsync("me/friends").then(function(data){
-        console.log('it thened');
-        res.send('hey');
-        return 'again';
-    }).then(function(message){
-        console.log(message);
-    })
-
-
-
-
-*/
-
-
-/* CODE FOR GRABBING MESSAGES
-
-    //generate a promise for a list of recent contacts
-        var p = new Promise(function(resolve, reject){
-            fb.get("me/posts", function(err, results) {
-                //get my recent contacts
-                var data = results.data;
-                for(var i = 0; i < data.length; i++){
-                    var obj = data[i]['story_tags'];
-                    for (var key in obj){
-                        for (var j = 0; j<obj[key].length; j++){
-                            //console.log('hey ' + obj[key][j]['id'] + ' ' + obj[key][j]['name']);
-                            recentContacts[obj[key][j]['id']] = true;
-                        }
-                    }
-                    if (i === data.length -1){
-                        console.log('resolving get Ids');
-                        resolve();
-                    }    
-                }         
-            });
-    });
-
-    var getStatuses = function(id){
-        
-
-
-
-    };
-
-    p().then(function(){
-
-         for (var contact in recentContacts){
-             promiseArray.push( getStatuses(contact).then( function (results){
-                //concat and add
-                var data = results.data;
-
-                for(var i = 0; i < data.length; i++){
-                    recentContacts[contact] = recentContacts[contact] + ' ' + data[i]['message'];
-                }  
-             }));
-         }
-
-        Promise.join.apply(null, promiseArray.then(function(){
-            console.log('done ', recentContacts);
-        }));
-
-    });
-
-    */
