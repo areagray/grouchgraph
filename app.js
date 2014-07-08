@@ -54,14 +54,16 @@ res.redirect('./bin/index');
 app.get('/friends', function(req, res) {
 
     fb.setAccessToken(conf.FB1);
-    
-    fbGetAsync('2503283').then(function(data){
-        console.log('in then ', data['first_name']);
-        res.send('then');
-        return fbGetAsync('1147911588');
-    }).then(function(data){
-        console.log('in second then hey ', data['first_name']);
+
+    var contact = '1527021971';
+
+    fb.get(contact + "/picture?redirect=0&type=normal", function(err, results) { 
+    var data = results.data;    
+
+    console.log('picture results ',data.url);    
     });
+
+res.send('thanks');
 
 });
 
@@ -89,27 +91,38 @@ app.get('/posts', function(req, res) {
 
     var getContacts = function(){
         var p = new Promise;
+        var userObj = {
+            fbId: '',
+            name: '',
+            text:'',
+            photoUrl:'',
+            alchemyRating:''
+        }
 
         fb.get("me/posts", function(err, results) {
             //get my recent contacts
             var data = results.data;
             //console.log('data length is ', data.length);
-            for(var i = 0; i < 10; i++){
+            for(var i = 0; i < 5; i++){
                 var obj = data[i]['story_tags'];
                 for (var key in obj){
                     for (var j = 0; j<obj[key].length; j++){
-                        //console.log('hey ' + obj[key][j]['id'] + ' ' + obj[key][j]['name']);
-                        recentContacts[obj[key][j]['id']] = '';
+                        var userId = obj[key][j]['id'];
+                        recentContacts[userId] = userObj;
+                        recentContacts[userId]['name']=obj[key][j]['name'];
+                        recentContacts[userId]['fbId']=userId;
+
                     }
                 }  
             }
+            console.log('expanded info ', recentContacts);
             p.resolve();         
         });
 
         return p;
     };
 
-    getStatuses = function (){
+    getInfos = function (){
         var p = new Promise;
         var allFunc = require("node-promise").all;
 
@@ -117,7 +130,7 @@ app.get('/posts', function(req, res) {
         for (var contact in recentContacts){
 
             //throttle
-            promiseArray.push(getStatus(contact));
+            promiseArray.push(getInfo(contact));
 
         }
 
@@ -125,20 +138,28 @@ app.get('/posts', function(req, res) {
         return allFunc(promiseArray);
     };
 
-    var getStatus = function(contact){
+    var getInfo = function(contact){
+        console.log('what is the contact coming into get info ', contact);
 
         var p = new Promise;
 
         fb.get(contact + "/statuses", function(err, results) { 
             var data = results.data;
+            person = recentContacts[contact];
             for(var i = 0; i < data.length; i++){
-                recentContacts[contact] = recentContacts[contact] + ' ' + data[i]['message'];
+                person['text'] = person['text'] + ' ' + data[i]['message'];
             } 
-            if (recentContacts[contact].length === 0){
-                delete recentContacts[contact];
+            if (person['text'].length === 0){
+                delete person;
             }
-            p.resolve(); 
 
+            fb.get(contact + "/picture?redirect=0&type=normal", function(err, results) { 
+                var data = results.data;  
+                recentContacts[contact]['photoUrl'] = data.url;   
+                p.resolve(); 
+            });
+
+            
         });
 
         return p;
@@ -153,7 +174,7 @@ app.get('/posts', function(req, res) {
         for (var contact in recentContacts){
 
 
-            promiseArray.push(getAlchemyScore(contact, recentContacts[contact]));
+            promiseArray.push(getAlchemyScore(contact, recentContacts[contact]['text']));
 
         }
 
@@ -174,7 +195,8 @@ app.get('/posts', function(req, res) {
             // See http://www.alchemyapi.com/api/ for format of returned object
             var sentiment = response.docSentiment;
             //console.log('sentiment analysis for user 147911588 is ', sentiment);
-            recentContacts[contact] = sentiment;
+            recentContacts[contact]['alchemyRating'] = sentiment;
+            delete recentContacts[contact]['text'];
             p.resolve();
         });
 
@@ -185,7 +207,7 @@ app.get('/posts', function(req, res) {
     //     console.log('result from stats/alchemy is: --> ', result);
     // });
 
-    getContacts().then(getStatuses).then(getAllScores).then(function(){
+    getContacts().then(getInfos).then(getAllScores).then(function(){
         console.log('all scores ?', recentContacts);
 
     });
