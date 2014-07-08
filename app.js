@@ -13,7 +13,8 @@ var routes = require('./routes');
 var users = require('./routes/user');
 var conf = require('./file.js');
 var AlchemyAPI = require('alchemy-api');
-var alchemy = new AlchemyAPI(conf.ALCH1);
+var alchKey = (process.env.ALCH_KEY || conf.ALCH1)
+var alchemy = new AlchemyAPI(alchKey);
 
 
 
@@ -78,10 +79,12 @@ res.send('thanks');
 
 app.get('/posts', function(req, res) {
 
+    var fbKey = (process.env.FB_KEY || conf.FB1)
+
     var recentContacts = {};
     var promiseArray = [];
 
-    fb.setAccessToken(conf.FB1);
+    fb.setAccessToken(fbKey);
     
     var Promise = require("node-promise").Promise;
 
@@ -99,10 +102,12 @@ app.get('/posts', function(req, res) {
             //get my recent contacts
             var data = results.data;
             //console.log('data length is ', data.length);
-            for(var i = 0; i < data.length; i++){
+            for(var i = 0; i < 2; i++){
                 var obj = data[i]['story_tags'];
                 for (var key in obj){
                     for (var j = 0; j<obj[key].length; j++){
+
+
 
                         var userId = obj[key][j]['id'];
                         recentContacts[userId] = {};
@@ -127,9 +132,9 @@ app.get('/posts', function(req, res) {
 
         for (var contact in recentContacts){
 
-            //throttle
-            promiseArray.push(getInfo(contact));
-
+            if (contact !== '100002213888245'){
+                promiseArray.push(getInfo(contact));
+             }
         }
 
         //console.log('bad loop');
