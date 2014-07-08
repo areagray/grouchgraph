@@ -54,6 +54,12 @@ app.get('/grouchgraph', function (req,res){
     res.redirect('grouchgraph.html');
 });
 
+
+app.get('/bootstrap_basic', function (req,res){
+    //console.log('trying to redirect');
+    res.redirect('bootstrap_basic.html');
+});
+
 app.get('/friends', function(req, res) {
 
     fb.setAccessToken(conf.FB1);
@@ -99,7 +105,6 @@ app.get('/posts', function(req, res) {
                     for (var j = 0; j<obj[key].length; j++){
 
                         var userId = obj[key][j]['id'];
-                        console.log('user id', userId);
                         recentContacts[userId] = {};
                         recentContacts[userId]['name']=obj[key][j]['name'];
                         recentContacts[userId]['fbId']=userId;
@@ -115,6 +120,7 @@ app.get('/posts', function(req, res) {
     };
 
     getInfos = function (){
+
         var p = new Promise;
         var allFunc = require("node-promise").all;
 
@@ -146,9 +152,10 @@ app.get('/posts', function(req, res) {
                 delete person;
             }
 
-            fb.get(contact + "/picture?redirect=0&type=normal", function(err, results) { 
+            fb.get(contact + "/picture?redirect=0&type=small", function(err, results) { 
                 var data = results.data;  
                 recentContacts[contact]['photoUrl'] = data.url;   
+                console.log('resolving getInfo promise for '+contact);
                 p.resolve(); 
             });
 
@@ -159,13 +166,13 @@ app.get('/posts', function(req, res) {
 
     };
 
-
     getAllScores = function(){
+        console.log('promiseArray for GetInfos all resolved');
+        console.log('promiseArray length ', promiseArray.length);
         var p = new Promise;
         var allFunc = require("node-promise").all;
 
         for (var contact in recentContacts){
-
 
             promiseArray.push(getAlchemyScore(contact, recentContacts[contact]['text']));
 
@@ -198,6 +205,7 @@ app.get('/posts', function(req, res) {
                 recentContacts[contact]['alchemyRating'] = sentiment;
                 delete recentContacts[contact]['text'];
             }
+             console.log('resolving getScore promise for '+contact);
             p.resolve();
         });
 
@@ -205,7 +213,9 @@ app.get('/posts', function(req, res) {
     };   
 
     getContacts().then(getInfos).then(getAllScores).then(function(){
-        console.log('all scores ?', recentContacts);
+        console.log('promiseArray for GetAllScores all resolved');
+        console.log('promiseArray length ', promiseArray.length);
+       
         var responseArray = [];
 
         for (var key in recentContacts){

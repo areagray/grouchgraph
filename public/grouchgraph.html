@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Grouch Graph</title>
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.19/angular.min.js"></script>
+    <script src="javascripts/app.js"></script>
+    <link rel="stylesheet" type="text/css" href="stylesheets/style.css" />
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+
+  </head>
+  <body>
+    <h1>Grouch Graph</h1>
+
+    <div ng-app="grouchgraph" ng-controller="grouchController">
+      <form><input ng-click="getPosts()" type="button" value="Go for it"></form>
+        <ul>
+          <li data-ng-repeat="element in data | orderBy: 'name' ">{{element.name}} - {{element.alchemyRating.score}} </li>
+        </ul>
+
+<table class="table table-striped">
+          <thead> 
+           <tr> <th>Friend</th> <th>Name</th> <th>Grouch Index</th></tr>
+          </thead> 
+          <tbody>
+            <tr data-ng-repeat="element in data | orderBy: 'alchemyRating.score' ">
+              <td> <img src = {{element.photoUrl}}></td>
+              <td>{{element.name}}</td>
+              <td>{{element.alchemyRating.score}}</td>  
+            </tr> 
+          </tbody> 
+        </table>
+
+
+
+
+
+    </div>
+
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+<script src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+  </body>
+</html>
+
